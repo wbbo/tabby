@@ -1,0 +1,76 @@
+name: Fork Windows Build
+
+on:
+  schedule:
+    - cron: '0 18 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fork-windows-build
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 120
+
+    env:
+      ARCH: x64
+      CSC_IDENTITY_AUTO_DISCOVERY: false
+
+    steps:
+    - name: Checkout fork
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Merge upstream master
+      shell: bash
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        git remote add upstream https://github.com/Eugeny/tabby.git 2>/dev/null || true
+        git fetch upstream master --tags
+        git merge --no-edit upstream/master
+
+    - name: Install Node
+      uses: actions/setup-node@v4
+      with:
+        node-version: 22
+
+    - name: Install Yarn
+      run: npm install -g yarn@1.22.22
+
+    - name: Install dependencies
+      run: yarn --network-timeout 1000000
+
+    - name: Verify dependency patches
+      run: node --import ./scripts/test-register.mjs --test tabby-terminal/test/webglAddon.test.ts
+
+    - name: Build
+      run: yarn run build
+
+    - name: Prepackage plugins
+      run: node scripts/prepackage-plugins.mjs
+
+    - name: Download VC++ redistributable
+      shell: pwsh
+      run: |
+        Invoke-WebRequest -Uri https://aka.ms/vs/17/release/vc_redist.x64.exe `
+          -OutFile build/vc_redist.exe -UseBasicParsing
+
+    - name: Build Windows packages
+      run: node scripts/build-windows.mjs
+
+    - name: Upload Windows artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: tabby-windows-x64-${{ github.run_number }}
+        retention-days: 14
+        if-no-files-found: error
+        path: |
+          dist/*-setup-*.exe
+          dist/*-portable-*.zip

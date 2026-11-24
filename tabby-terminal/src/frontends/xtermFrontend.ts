@@ -724,6 +724,9 @@ export class XTermFrontend extends Frontend {
             this.xterm.options.theme = theme
             this.configuredTheme = theme
         }
+
+        this.element?.style.setProperty('--terminal-composition-background', theme.background ?? 'transparent')
+        this.element?.style.setProperty('--terminal-composition-foreground', theme.foreground ?? scheme.foreground)
     }
 
     configure (profile: BaseTerminalProfile): void {

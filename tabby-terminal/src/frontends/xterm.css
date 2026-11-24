@@ -9,6 +9,11 @@
     background: none !important;
 }
 
+.xterm .composition-view {
+    background: var(--terminal-composition-background, transparent);
+    color: var(--terminal-composition-foreground, inherit);
+}
+
 .xterm-decoration-overview-ruler {
     right: 1px;
     pointer-events: none;
