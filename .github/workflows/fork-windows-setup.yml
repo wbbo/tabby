@@ -1,4 +1,4 @@
-name: Fork Windows Build
+name: Fork Windows Setup
 
 on:
   schedule:
@@ -9,7 +9,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: fork-windows-build
+  group: fork-windows-setup
   cancel-in-progress: true
 
 jobs:
@@ -19,6 +19,7 @@ jobs:
 
     env:
       ARCH: x64
+      TABBY_BUILD_TARGET: nsis
       CSC_IDENTITY_AUTO_DISCOVERY: false
 
     steps:
@@ -62,15 +63,13 @@ jobs:
         Invoke-WebRequest -Uri https://aka.ms/vs/17/release/vc_redist.x64.exe `
           -OutFile build/vc_redist.exe -UseBasicParsing
 
-    - name: Build Windows packages
+    - name: Build Windows installer
       run: node scripts/build-windows.mjs
 
-    - name: Upload Windows artifacts
+    - name: Upload installer
       uses: actions/upload-artifact@v4
       with:
-        name: tabby-windows-x64-${{ github.run_number }}
+        name: tabby-windows-setup-x64-${{ github.run_number }}
         retention-days: 14
         if-no-files-found: error
-        path: |
-          dist/*-setup-*.exe
-          dist/*-portable-*.zip
+        path: dist/*-setup-*.exe

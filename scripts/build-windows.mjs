@@ -6,14 +6,20 @@ import { execSync } from 'child_process'
 
 const isTag = (process.env.GITHUB_REF || process.env.BUILD_SOURCEBRANCH || '').startsWith('refs/tags/')
 const keypair = process.env.SM_KEYPAIR_ALIAS
+const target = process.env.TABBY_BUILD_TARGET || 'nsis,zip'
+const targets = target.split(',').map(x => x.trim()).filter(Boolean)
+
+if (targets.length === 0 || targets.some(x => !['nsis', 'zip'].includes(x))) {
+    throw new Error(`Unsupported TABBY_BUILD_TARGET "${target}", expected a comma-separated list of: nsis, zip`)
+}
 
 process.env.ARCH = process.env.ARCH || process.arch
 
 console.log('Signing enabled:', !!keypair)
+console.log('Targets:', targets.join(', '))
 
 builder({
-    dir: true,
-    win: ['nsis', 'zip'],
+    win: targets,
     arm64: process.env.ARCH === 'arm64',
     config: {
         extraMetadata: {
